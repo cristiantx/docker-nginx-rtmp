@@ -1,10 +1,10 @@
-# Pull base image.
-FROM alpine:3.3
+FROM gliderlabs/alpine:latest
 
 # Install Nginx.
 RUN \
     apk update && \
-    apk --no-cache add --virtual .build-deps openssl-dev pcre-dev zlib-dev wget build-base ca-certificates ffmpeg && \
+    apk --no-cache add --virtual .build-deps openssl-dev pcre-dev yasm x264-dev fdk-aac-dev \
+        zlib-dev wget build-base ca-certificates autoconf automake libtool && \
     ln -s /lib/libz.so /usr/lib/.
     
 RUN cd /root && \
@@ -22,25 +22,42 @@ RUN cd /root/nginx-1.9.2 && \
     --sbin-path=/usr/local/sbin/nginx && \
   make && \
   make install
-
-RUN cd /root && \
-  wget http://downloads.sourceforge.net/project/opencore-amr/fdk-aac/fdk-aac-0.1.4.tar.gz
-
-RUN cd /root && \
-  tar -zxvf fdk-aac-0.1.4.tar.gz
+ 
   
-RUN cd /root/fdk-aac-0.1.4 && \
-  ./configure && \
-  make && \
-  make install
+RUN mkdir -p /var/log/nginx
+RUN ln -sf /dev/stdout /var/log/nginx/access.log
+RUN ln -sf /dev/stderr /var/log/nginx/error.log
 
 RUN cd /root && \
-    wget http://ffmpeg.org/releases/ffmpeg-3.0.tar.bz2
+    rm nginx-1.9.2.tar.gz && \
+    rm master.zip
+
+# ffmpeg stuff
+RUN mkdir /ffmpeg_sources
+RUN mkdir /ffmpeg_build
+
     
-RUN cd /root && \
-    tar -xvzf ffmpeg-3.0.tar.bz2
+RUN cd /ffmpeg_sources && \
+    wget http://ffmpeg.org/releases/ffmpeg-3.0.tar.bz2 && \
+    tar -jxvf ffmpeg-3.0.tar.bz2 && \
+    cd ffmpeg-3.0 && \
+    PATH="/bin:$PATH" PKG_CONFIG_PATH="/ffmpeg_build/lib/pkgconfig" ./configure \
+      --prefix="/ffmpeg_build" \
+      --pkg-config-flags="--static" \
+      --extra-cflags="-I/ffmpeg_build/include" \
+      --extra-ldflags="-L/ffmpeg_build/lib" \
+      --bindir="/bin" \
+      --enable-gpl \
+      --enable-libfdk-aac \
+      --enable-libx264 \
+      --enable-nonfree && \
+    PATH="/bin:$PATH" make && \
+    make install && \
+    make distclean && \
+    hash -r
   
-RUN apk del build-base && \
+RUN apk del build-base automake autoconf libtool && \
+  rm -rf /ffmpeg_sources && \
   rm -rf /tmp/src && \
   rm -rf /var/cache/apk/* && \
   mkdir -p /data/hls
