@@ -33,12 +33,13 @@ RUN ln -sf /dev/stderr /var/log/nginx/error.log
 
 RUN cd /root && \
     rm nginx-1.9.2.tar.gz && \
-    rm master.zip
+    rm master.zip && \
+    rm -rf nginx-1.9.2 && \
+    rm -rf nginx-rtmp-module-master
 
 # ffmpeg stuff
 RUN mkdir /ffmpeg_sources
 RUN mkdir /ffmpeg_build
-
 
 RUN cd /ffmpeg_sources && \
     wget -O fdk-aac.tar.gz https://github.com/mstorsjo/fdk-aac/tarball/master && \
@@ -87,12 +88,11 @@ RUN cd /ffmpeg_sources && \
   
 RUN apk del build-base automake autoconf libtool pcre-dev zlib-dev wget openssl-dev && \
   rm -rf /ffmpeg_sources && \
-  rm -rf /ffmpeg
   rm -rf /tmp/src && \
   rm -rf /var/cache/apk/* && \
   mkdir -p /data/hls
 
-ADD nginx.conf /etc/nginx/nginx.conf
+ADD nginx/nginx.conf /etc/nginx/nginx.conf
 
 # Expose ports.
 EXPOSE 80 1935

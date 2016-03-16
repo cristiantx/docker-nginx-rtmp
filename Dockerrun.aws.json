@@ -1,0 +1,34 @@
+{
+  "AWSEBDockerrunVersion": 2,
+  "volumes": [
+    {
+      "name": "nginx-config",
+      "host": {
+        "sourcePath": "/var/app/current/nginx/nginx.conf"
+      }
+    }
+  ],
+  "containerDefinitions": [
+    {
+      "name": "nginx-rtmp",
+      "image": "genxstylez/nginx-rtmp:latest",
+      "essential": true,
+      "memory": 768,
+      "portMappings": [
+        { "hostPort": 80, "containerPort": 80 },
+        { "hostPort": 1935, "containerPort": 1935 }
+      ],
+      "mountPoints": [
+        {
+          "sourceVolume": "nginx-config",
+          "containerPath": "/etc/nginx/nginx.conf",
+          "readOnly": true
+        },
+        {
+          "sourceVolume": "awseb-logs-nginx",
+          "containerPath": "/var/log/nginx"
+        }
+      ]
+    }
+  ]
+}
